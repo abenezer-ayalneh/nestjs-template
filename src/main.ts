@@ -25,7 +25,7 @@ async function bootstrap() {
 
 	// Enable CORS from allowed origins listed in .env
 	app.enableCors({
-		origin: configService.get('CORS_ALLOWED_ORIGINS') ? configService.get('CORS_ALLOWED_ORIGINS').split(',') : false,
+		origin: configService.get<string>('CORS_ALLOWED_ORIGINS') ? configService.get<string>('CORS_ALLOWED_ORIGINS').split(',') : false,
 	})
 
 	// Add an 'api' prefix to all controller routes
@@ -55,7 +55,11 @@ async function bootstrap() {
 	const documentFactory = () => SwaggerModule.createDocument(app, swaggerConfig)
 	SwaggerModule.setup('docs', app, documentFactory)
 
-	await app.listen(configService.get('APP_PORT') ?? 3000, async () => logger.verbose(`Application running at ${await app.getUrl()}`))
+	await app.listen(configService.get('APP_PORT') ?? 3000, () => {
+		app.getUrl()
+			.then((url) => logger.verbose(`Application running at ${url}`))
+			.catch((err) => logger.error(err))
+	})
 }
 
-bootstrap()
+void bootstrap()
