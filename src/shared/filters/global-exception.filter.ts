@@ -1,5 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common'
-import { PrismaClientValidationError } from '@prisma/client/runtime/library'
+import { PrismaClientKnownRequestError, PrismaClientValidationError } from '@prisma/client/runtime/library'
 import { Response } from 'express'
 
 import ValidationException from '../exceptions/validation.exception'
@@ -34,7 +34,7 @@ export default class GlobalExceptionFilter implements ExceptionFilter {
 			responseData.statusCode = exception.getStatus()
 			responseData.error = 'HTTP Error'
 			stack = exception.stack
-		} else if (exception instanceof PrismaClientValidationError) {
+		} else if (exception instanceof PrismaClientValidationError || exception instanceof PrismaClientKnownRequestError) {
 			responseData.data = exception.message
 			responseData.statusCode = HttpStatus.INTERNAL_SERVER_ERROR
 			responseData.error = 'Database Error'
@@ -42,7 +42,11 @@ export default class GlobalExceptionFilter implements ExceptionFilter {
 		}
 
 		// Log the error before responding
-		this.logger.error({ caughtException: exception }, stack)
+		if (exception instanceof Error) {
+			this.logger.error({ exception: { name: exception.name, message: exception.message } }, exception.stack)
+		} else {
+			this.logger.error({ exception: exception }, stack)
+		}
 
 		response.status(responseData.statusCode).json(responseData)
 	}
