@@ -10,7 +10,6 @@ const loggerOptions: LoggerOptions = {
 	transports: [
 		// - Write all logs to console when in development environment
 		new transports.Console({
-			level: 'silly',
 			format: format.combine(
 				format.timestamp(),
 				format.ms(),
@@ -20,6 +19,7 @@ const loggerOptions: LoggerOptions = {
 					prettyPrint: true,
 				}),
 			),
+			handleExceptions: true,
 		}),
 		// - Write all logs with importance level of `error` or less to `error.log` file
 		new transports.DailyRotateFile({

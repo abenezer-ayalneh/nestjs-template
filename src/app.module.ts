@@ -9,7 +9,7 @@ import GlobalExceptionFilter from './shared/filters/global-exception.filter'
 
 @Module({
 	imports: [
-		ConfigModule.forRoot({ isGlobal: true }),
+		ConfigModule.forRoot({ isGlobal: true, expandVariables: true }),
 		ThrottlerModule.forRootAsync({
 			imports: [ConfigModule],
 			inject: [ConfigService],
