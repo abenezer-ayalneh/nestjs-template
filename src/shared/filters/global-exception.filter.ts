@@ -1,5 +1,5 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Logger } from '@nestjs/common'
-import { PrismaClientKnownRequestError, PrismaClientValidationError } from '@prisma/client/runtime/library'
+import { PrismaClientKnownRequestError, PrismaClientValidationError } from '@prisma/client/runtime/client'
 import { Response } from 'express'
 
 import ValidationException from '../exceptions/validation.exception'
@@ -21,23 +21,27 @@ export default class GlobalExceptionFilter implements ExceptionFilter {
 		// Create the default response data structure
 		const responseData: FilterResponseInterface = {
 			statusCode: 500,
-			data: 'Internal server error',
-			error: 'Server Error',
+			errorType: 'Server Error',
+			message: 'Internal server error',
 		}
 
 		if (exception instanceof ValidationException) {
-			responseData.data = exception.getMessage
 			responseData.statusCode = exception.getStatusCode
-			responseData.error = exception.getError
+			responseData.errorType = exception.getError
+			responseData.message = typeof exception.getMessage === 'string' ? exception.getMessage : exception.getError
+			responseData.details = exception.getMessage
+			stack = exception
 		} else if (exception instanceof HttpException) {
-			responseData.data = exception.getResponse()
 			responseData.statusCode = exception.getStatus()
-			responseData.error = 'HTTP Error'
+			responseData.errorType = 'HTTP Error'
+			responseData.message = exception.message
+			responseData.details = exception.getResponse()
 			stack = exception.stack
 		} else if (exception instanceof PrismaClientValidationError || exception instanceof PrismaClientKnownRequestError) {
-			responseData.data = exception.message
 			responseData.statusCode = HttpStatus.INTERNAL_SERVER_ERROR
-			responseData.error = 'Database Error'
+			responseData.errorType = 'Database Error'
+			responseData.message = exception.message
+			responseData.details = exception.message
 			stack = exception.stack
 		}
 
@@ -45,7 +49,7 @@ export default class GlobalExceptionFilter implements ExceptionFilter {
 		if (exception instanceof Error) {
 			this.logger.error({ exception: { name: exception.name, message: exception.message } }, exception.stack)
 		} else {
-			this.logger.error({ exception: exception }, stack)
+			this.logger.error({ exception }, stack)
 		}
 
 		response.status(responseData.statusCode).json(responseData)
